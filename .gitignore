@@ -1,0 +1,6 @@
+.vscode/
+node_modules/
+ffmpeg.exe
+*_pb.js
+package-lock.json
+config.json

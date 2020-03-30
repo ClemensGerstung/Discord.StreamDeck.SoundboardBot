@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package soundboard;
+
+service SoundBoard {
+    rpc PlaySong (PlaySongRequest) returns (PlaySongReply) {}
+    rpc JoinMe(JoinMeRequest) returns (JoinMeReply) {}
+    rpc ListSongs(ListSongsRequest) returns (ListSongsReply) {}
+}
+
+message PlaySongRequest {
+    string fileName = 1;
+}
+  
+message PlaySongReply {}
+
+message JoinMeRequest {
+    string userId = 1;
+}
+
+message JoinMeReply {}
+
+message ListSongsRequest{}
+
+message ListSongsReply {
+    repeated string fileName = 1;
+}
