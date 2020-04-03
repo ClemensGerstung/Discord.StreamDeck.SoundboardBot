@@ -61,7 +61,7 @@ namespace Streamdeck
 
       Channel channel = new Channel("127.0.0.1:50051", ChannelCredentials.Insecure);
       _client = new SoundBoard.SoundBoardClient(channel);
-      _client.JoinMe(new JoinMeRequest { UserId = "216314417913135105" });
+      _client.JoinMe(new JoinMeRequest { UserId = "" });
     }
 
     private void OnKeyDown(object sender, StreamDeckEventReceivedEventArgs<streamdeck_client_csharp.Events.KeyDownEvent> e)
@@ -176,7 +176,6 @@ namespace Streamdeck
   {
     private static readonly ILog __log = LogManager.GetLogger(typeof(Program));
 
-    //216314417913135105
     static void Main(string[] args)
     {
       __log.Info("Start");
@@ -203,26 +202,6 @@ namespace Streamdeck
       ParserResult<Options> result = parser.ParseArguments<Options>(args);
       result.WithParsed(action);
 
-      //Channel channel = new Channel("127.0.0.1:50051", ChannelCredentials.Insecure);
-      //var client = new SoundBoard.SoundBoardClient(channel);
-
-      //client.JoinMe(new JoinMeRequest { UserId = "216314417913135105" });
-
-      //var response = client.ListSongs(new ListSongsRequest());
-
-      //await client.PlaySongAsync(new PlaySongRequest { FileName = response.Files[0].Name });
-      //await Task.Delay(5000);
-      //await client.PlaySongAsync(new PlaySongRequest { FileName = response.Files[1].Name });
-      //await Task.Delay(5000);
-      //await client.PlaySongAsync(new PlaySongRequest { FileName = response.Files[2].Name });
-      //await Task.Delay(5000);
-      //await client.PlaySongAsync(new PlaySongRequest { FileName = response.Files[3].Name });
-      //await Task.Delay(5000);
-      //await client.PlaySongAsync(new PlaySongRequest { FileName = response.Files[4].Name });
-      //await Task.Delay(5000);
-      //await client.PlaySongAsync(new PlaySongRequest { FileName = response.Files[5].Name });
-
-
       void action(Options options)
       {
         try
@@ -240,72 +219,6 @@ namespace Streamdeck
           __log.Fatal(e.StackTrace);
         }
       }
-    }
-
-    static void RunPlugin(Options options)
-    {
-      ManualResetEvent connectEvent = new ManualResetEvent(false);
-      ManualResetEvent disconnectEvent = new ManualResetEvent(false);
-
-      StreamDeckConnection connection = new StreamDeckConnection(options.Port, options.PluginUUID, options.RegisterEvent);
-
-      connection.OnConnected += (sender, args) =>
-      {
-        connectEvent.Set();
-        __log.Info("OnConnected");
-      };
-
-      connection.OnDisconnected += (sender, args) =>
-      {
-        disconnectEvent.Set();
-        __log.Info("OnDisconnected");
-      };
-
-      connection.OnApplicationDidLaunch += (sender, args) =>
-      {
-        __log.InfoFormat("OnApplicationDidLaunch {0}", args.Event.Payload.Application);
-      };
-
-      connection.OnApplicationDidTerminate += (sender, args) =>
-      {
-        __log.InfoFormat("OnApplicationDidTerminate {0}", args.Event.Payload.Application);
-      };
-
-      connection.OnDidReceiveSettings += (sender, args) =>
-      {
-        __log.DebugFormat("Receive Setting: {0} {1} {2} {3} {4}",
-                          args.Event.Action,
-                          args.Event.Payload,
-                          args.Event.Context,
-                          args.Event.Device,
-                          args.Event.Payload.Settings["soundfile"]);
-        switch (args.Event.Action)
-        {
-          case "com.clemensgerstung.streamdeck.discord.soundboard":
-
-            break;
-        }
-
-      };
-
-
-
-      connection.OnKeyDown += Connection_OnKeyDown;
-
-      connection.Run();
-
-      if (connectEvent.WaitOne(TimeSpan.FromSeconds(10)))
-      {
-        while (!disconnectEvent.WaitOne())
-        {
-
-        }
-      }
-    }
-
-    private static void Connection_OnKeyDown(object sender, StreamDeckEventReceivedEventArgs<streamdeck_client_csharp.Events.KeyDownEvent> e)
-    {
-      __log.DebugFormat("KeyDown: {0} {1}", e.Event.Action, e.Event.Payload);
     }
   }
 }
