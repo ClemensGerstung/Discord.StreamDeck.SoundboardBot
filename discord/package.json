@@ -1,0 +1,26 @@
+{
+  "name": "streamdeck-discordbot",
+  "version": "0.0.1",
+  "description": "Connection between your Elgato StreamDeck and a Discord Bot for playing some music",
+  "main": "index.js",
+  "dependencies": {
+    "@discordjs/opus": "^0.1.0",
+    "@grpc/proto-loader": "^0.5.3",
+    "discord.js": "^12.1.1",
+    "ffmpeg": "^0.0.4",
+    "fluent-ffmpeg": "^2.1.2",
+    "google-protobuf": "^3.11.4",
+    "grpc": "^1.24.2",
+    "protobufjs": "^6.8.9"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "discord",
+    "streamdeck"
+  ],
+  "author": "Clemens Gerstung",
+  "license": "MIT"
+}

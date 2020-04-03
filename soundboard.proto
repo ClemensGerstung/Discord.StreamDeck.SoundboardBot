@@ -23,5 +23,5 @@ message JoinMeReply {}
 message ListSongsRequest{}
 
 message ListSongsReply {
-    repeated string fileName = 1;
+    repeated string files = 1;
 }

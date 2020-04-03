@@ -1,0 +1,43 @@
+{
+    "Actions": [
+      {
+        "Icon": "Images/icon",
+        "Name": "Test Plugin - Property Inspector",
+        "States": [
+          {
+            "Image": "Images/action1",
+            "TitleAlignment": "middle",
+            "FontSize": "17"
+          }
+        ],
+        "SupportedInMultiActions": false,
+        "Tooltip": "This demonstrates saving and using settings",
+        "UUID": "org.clemensgerstung.soundboard.pidemo",
+        "PropertyInspectorPath": "PropertyInspector/PIDemo/Index.html"
+      }
+    ],
+    "Author": "Clemens Gertung",
+    "Description": "Connects your Elgato Streamdeck to an Discord Bot to provide a soundboard",
+    "Name": "StreamDeck Discord Soundboard",
+    "Icon": "Images/pluginIcon",
+    "URL": "",
+    "Version": "0.1",
+    "CodePath": "streamdeck.exe",
+    "Category": "Streamdeck Discord Soundboard",
+    "CategoryIcon": "Images/categoryIcon",
+    "SDKVersion":  2,
+    "Software": {
+      "MinimumVersion": "4.1"
+    },
+    "OS": [
+      {
+        "Platform": "windows",
+        "MinimumVersion": "10"
+      }
+    ],
+    "ApplicationsToMonitor": {
+      "windows": [
+        "notepad.exe"
+      ]
+    }
+  }

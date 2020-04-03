@@ -4,3 +4,10 @@ ffmpeg.exe
 *_pb.js
 package-lock.json
 config.json
+*.pb.cc
+*.pb.h
+.vs/
+out/
+bin/
+obj/
+packages/

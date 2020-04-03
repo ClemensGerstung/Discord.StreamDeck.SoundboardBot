@@ -1,36 +1,30 @@
-const messages = require('./soundboard_pb');
-const services = require('./soundboard_grpc_pb');
+const PROTO_PATH = __dirname + '/../soundboard.proto';
 
+const fs = require('fs');
 const grpc = require('grpc');
+const protoLoader = require('@grpc/proto-loader');
+var packageDefinition = protoLoader.loadSync(
+  PROTO_PATH,
+  {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    defaults: true,
+    oneofs: true
+  });
+var soundboard = grpc.loadPackageDefinition(packageDefinition).soundboard;
 
 const Discord = require("discord.js");
-const { prefix, token } = require("./config.json");
+const { token, guildId } = require("./config.json");
 
 const client = new Discord.Client();
-const queue = new Map();
+let user = null;
+let guild = null;
 
 client.once("ready", async () => {
   console.log("Ready!");
 
-  var user = await client.users.fetch("216314417913135105");
-  const channels = client.channels.cache;
-  // console.log(channel.members.some(member => member.user === user));
-
-  channels.forEach(async channel => {
-    if(channel.type === 'voice') {
-      console.log("Voice Channel: " + channel.name);
-
-      if(channel.members.some(member => member.user === user)) {
-        console.log("User \""+user.username+"\" is in this channel");
-
-        var connection = await channel.join();
-        const dispatcher = connection.play("D:/temp/Streamdeck/Audiospur-3.mp3")
-                                     .on("finish", () => { /* TODO: leave? */ })
-                                     .on("error", error => console.error(error));
-        dispatcher.setVolumeLogarithmic(1);
-      }
-    }
-  });
+  guild = await client.guilds.resolve(guildId);
 });
 
 client.once("reconnecting", () => {
@@ -42,116 +36,87 @@ client.once("disconnect", () => {
 });
 
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
+  if (user == null) {
+    return;
+  }
+
   const newUserChannel = newMember.channel;
 
   console.log("New Channel: " + newMember.channel);
   console.log("Old Channel: " + oldMember.channel);
 
-  if(newUserChannel !== null) {
-    var connection = await newUserChannel.join();
-    const dispatcher = connection.play("D:/temp/Streamdeck/Audiospur-3.mp3")
-                                 .on("finish", () => { /* TODO: leave? */ })
-                                 .on("error", error => console.error(error));
-    dispatcher.setVolumeLogarithmic(1);
-
+  if (newUserChannel !== null) {
+    await newUserChannel.join();
   } else {
     await oldMember.channel.leave();
   }
 })
 
-client.on("message", async message => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith(prefix)) return;
+// async function execute(message, serverQueue) {
+//   const voiceChannel = message.member.voice.channel;
+//   if (!voiceChannel)
+//     return message.channel.send(
+//       "You need to be in a voice channel to play music!"
+//     );
+//   const permissions = voiceChannel.permissionsFor(message.client.user);
+//   if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
+//     return message.channel.send(
+//       "I need the permissions to join and speak in your voice channel!"
+//     );
+//   }
+// }
 
-  const serverQueue = queue.get(message.guild.id);
 
-  if (message.content.startsWith(`${prefix}play`)) {
-    execute(message, serverQueue);
-  } else {
-    message.channel.send("You need to enter a valid command!");
-  }
-});
-
-async function execute(message, serverQueue) {
-  const voiceChannel = message.member.voice.channel;
-  if (!voiceChannel)
-    return message.channel.send(
-      "You need to be in a voice channel to play music!"
-    );
-  const permissions = voiceChannel.permissionsFor(message.client.user);
-  if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
-    return message.channel.send(
-      "I need the permissions to join and speak in your voice channel!"
-    );
-  }
-
-  if (!serverQueue) {
-    const queueContruct = {
-      textChannel: message.channel,
-      voiceChannel: voiceChannel,
-      connection: null,
-      volume: 5,
-      playing: true
-    };
-
-    queue.set(message.guild.id, queueContruct);
-
-    try {
-      var connection = await voiceChannel.join();
-      queueContruct.connection = connection;
-      play(message.guild, "D:/temp/Streamdeck/Audiospur-3.mp3");
-    } catch (err) {
-      console.log(err);
-      queue.delete(message.guild.id);
-      return message.channel.send(err);
-    }
-  } else {
-    return message.channel.send(`${song.title} has been added to the queue!`);
-  }
-}
-
-function play(guild, song) {
-  const serverQueue = queue.get(guild.id);
-  if (!song) {
-    serverQueue.voiceChannel.leave();
-    queue.delete(guild.id);
-    return;
-  }
-
-  const dispatcher = serverQueue.connection
-    .play(song)
-    .on("finish", () => { /* TODO: leave? */ })
-    .on("error", error => console.error(error));
-  dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-}
-
-function PlaySong(call, callback) {
+async function PlaySong(call, callback) {
   var request = call.request;
-  var fileName = request.getFileName();
+  var fileName = "D:/temp/Streamdeck/" + request.fileName;
 
+  if (user != null) {
+    var channel = user.voice.channel;
 
+    var connection = await channel.join();
+    await connection.play(fileName);
+  }
 
-  callback(null, new messages.PlaySongReply());
+  callback(null, {});
 }
 
 function ListSongs(call, callback) {
-  var request = call.request;
+  const testFolder = "D:/temp/Streamdeck/";
 
+  let res = fs.readdirSync(testFolder);
 
-
-  callback(null, new messages.ListSongsReply());
+  callback(null, { files: res });
 }
 
-function JoinMe(call, callback) {
+async function JoinMe(call, callback) {
   var request = call.request;
-  
 
+  if (user == null) {
+    user = await guild.members.fetch(request.userId);
 
-  callback(null, new messages.JoinMeReply());
+    let bot = await guild.members.fetch(client.user.id);
+    let name = user.displayName.replace(/\d+$/, "");
+
+    if (name.endsWith("s") || name.endsWith("z")) {
+      name += "' Office";
+    }
+    else {
+      name += "'s Office";
+    }
+
+    await bot.edit({ nick: name });
+
+    if (user.voice.channel != null) {
+      await user.voice.channel.join();
+    }
+  }
+
+  callback(null, {});
 }
 
 var server = new grpc.Server();
-server.addService(services.SoundBoardService, { playSong: PlaySong, listSongs: ListSongs, joinMe: JoinMe });
+server.addService(soundboard.SoundBoard.service, { playSong: PlaySong, listSongs: ListSongs, joinMe: JoinMe });
 server.bind('0.0.0.0:50051', grpc.ServerCredentials.createInsecure());
 server.start();
 
