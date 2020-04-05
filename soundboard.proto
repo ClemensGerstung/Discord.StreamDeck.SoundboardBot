@@ -6,6 +6,7 @@ service SoundBoard {
     rpc PlaySong (PlaySongRequest) returns (PlaySongReply) {}
     rpc JoinMe(JoinMeRequest) returns (JoinMeReply) {}
     rpc ListSongs(ListSongsRequest) returns (ListSongsReply) {}
+    rpc ListUsers(ListUsersRequest) returns (ListUsersReply) {}
 }
 
 message PlaySongRequest {
@@ -24,4 +25,18 @@ message ListSongsRequest{}
 
 message ListSongsReply {
     repeated string files = 1;
+}
+
+message ListUsersRequest {
+    bool onlyOnline = 1;
+    string filter = 2;
+}
+
+message User {
+    string id = 1;
+    string name = 2;
+}
+
+message ListUsersReply {
+    repeated User users = 1;
 }

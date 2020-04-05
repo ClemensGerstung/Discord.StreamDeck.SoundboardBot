@@ -1,9 +1,12 @@
 const PROTO_PATH = __dirname + '/../soundboard.proto';
 
+const Discord = require("discord.js");
+const { token, guildId, folder } = require("./config.json");
+const path = require('path');
 const fs = require('fs');
 const grpc = require('grpc');
 const protoLoader = require('@grpc/proto-loader');
-var packageDefinition = protoLoader.loadSync(
+const packageDefinition = protoLoader.loadSync(
   PROTO_PATH,
   {
     keepCase: true,
@@ -12,10 +15,7 @@ var packageDefinition = protoLoader.loadSync(
     defaults: true,
     oneofs: true
   });
-var soundboard = grpc.loadPackageDefinition(packageDefinition).soundboard;
-
-const Discord = require("discord.js");
-const { token, guildId } = require("./config.json");
+const soundboard = grpc.loadPackageDefinition(packageDefinition).soundboard;
 
 const client = new Discord.Client();
 let user = null;
@@ -35,20 +35,20 @@ client.once("disconnect", () => {
   console.log("Disconnect!");
 });
 
-client.on('voiceStateUpdate', async (oldMember, newMember) => {
+client.on('voiceStateUpdate', async (oldState, newState) => {
   if (user == null) {
     return;
   }
 
-  const newUserChannel = newMember.channel;
+  console.log(newState.member);
+  console.log(user.id)
+  console.log(oldState.member);
 
-  console.log("New Channel: " + newMember.channel);
-  console.log("Old Channel: " + oldMember.channel);
-
+  const newUserChannel = newState.channel;
   if (newUserChannel !== null) {
     await newUserChannel.join();
   } else {
-    await oldMember.channel.leave();
+    await oldState.channel.leave();
   }
 })
 
@@ -69,7 +69,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
 
 async function PlaySong(call, callback) {
   var request = call.request;
-  var fileName = "D:/temp/Streamdeck/" + request.fileName;
+  var fileName = path.join(folder, request.fileName);
 
   if (user != null) {
     var channel = user.voice.channel;
@@ -82,9 +82,7 @@ async function PlaySong(call, callback) {
 }
 
 function ListSongs(call, callback) {
-  const testFolder = "D:/temp/Streamdeck/";
-
-  let res = fs.readdirSync(testFolder);
+  let res = fs.readdirSync(folder);
 
   callback(null, { files: res });
 }
@@ -95,19 +93,8 @@ async function JoinMe(call, callback) {
   if (user == null) {
     user = await guild.members.fetch(request.userId);
 
-    let bot = await guild.members.fetch(client.user.id);
-    let name = user.displayName.replace(/\d+$/, "");
-
-    if (name.endsWith("s") || name.endsWith("z")) {
-      name += "' Office";
-    }
-    else {
-      name += "'s Office";
-    }
-
-    await bot.edit({ nick: name });
-
-    if (user.voice.channel != null) {
+    if (user.voice != null && 
+        user.voice.channel != null) {
       await user.voice.channel.join();
     }
   }
@@ -115,8 +102,37 @@ async function JoinMe(call, callback) {
   callback(null, {});
 }
 
+async function ListUsers(call, callback)
+{
+  let online = call.request.onlyOnline;
+  let nameFilter = call.request.filter;
+  let members = await guild.members.fetch();
+  let result = [];
+  
+  if(online)
+  {
+    members = members.filter(user => user.presence.status == "online");
+  }
+
+  if(nameFilter)
+  {
+    let regex = new RegExp(nameFilter, 'gi');
+    members = members.filter(user => user.user.username.match(regex));
+  }
+
+  result = members.filter(member => !member.user.bot)
+                  .map(member => {
+                    let obj = {};
+                    obj.id = member.id;
+                    obj.name = member.user.username;
+                    return obj;
+                  });
+
+  callback(null, { users: result });
+}
+
 var server = new grpc.Server();
-server.addService(soundboard.SoundBoard.service, { playSong: PlaySong, listSongs: ListSongs, joinMe: JoinMe });
+server.addService(soundboard.SoundBoard.service, { playSong: PlaySong, listSongs: ListSongs, joinMe: JoinMe, listUsers: ListUsers });
 server.bind('0.0.0.0:50051', grpc.ServerCredentials.createInsecure());
 server.start();
 

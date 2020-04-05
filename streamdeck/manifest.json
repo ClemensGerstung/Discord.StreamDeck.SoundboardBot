@@ -2,27 +2,37 @@
     "Actions": [
       {
         "Icon": "Images/icon",
-        "Name": "Test Plugin - Property Inspector",
+        "Name": "Play Sound",
         "States": [
           {
-            "Image": "Images/action1",
-            "TitleAlignment": "middle",
-            "FontSize": "17"
+            "Image": "Images/action1"
           }
         ],
-        "SupportedInMultiActions": false,
-        "Tooltip": "This demonstrates saving and using settings",
-        "UUID": "org.clemensgerstung.soundboard.pidemo",
-        "PropertyInspectorPath": "PropertyInspector/PIDemo/Index.html"
+        "Tooltip": "Let's your discord bot play a sound",
+        "UUID": "org.clemensgerstung.soundboard.play",
+        "PropertyInspectorPath": "PropertyInspector/Play.html"
+      },
+      {
+        "Icon": "Images/connect",
+        "Name": "Reconnect",
+        "States": [
+          {
+            "Image": "Images/action1"
+          }
+        ],
+        "Tooltip": "Connect StreamDeck and Discord Bot",
+        "UUID": "org.clemensgerstung.soundboard.connect",
+        "PropertyInspectorPath": "PropertyInspector/Connect.html",
+        "SupportedInMultiActions": false
       }
     ],
     "Author": "Clemens Gertung",
     "Description": "Connects your Elgato Streamdeck to an Discord Bot to provide a soundboard",
     "Name": "StreamDeck Discord Soundboard",
     "Icon": "Images/pluginIcon",
-    "URL": "",
+    "URL": "https://github.com/ClemensGerstung/streamdeck-discord-soundboard",
     "Version": "0.1",
-    "CodePath": "streamdeck.exe",
+    "CodePathWin": "Soundboard.exe",
     "Category": "Streamdeck Discord Soundboard",
     "CategoryIcon": "Images/categoryIcon",
     "SDKVersion":  2,
@@ -34,10 +44,5 @@
         "Platform": "windows",
         "MinimumVersion": "10"
       }
-    ],
-    "ApplicationsToMonitor": {
-      "windows": [
-        "notepad.exe"
-      ]
-    }
+    ]
   }

@@ -1,0 +1,3 @@
+function receivedSettings(payload) {
+  
+}

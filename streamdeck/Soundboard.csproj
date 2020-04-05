@@ -109,7 +109,16 @@
   </Target>
   <Import Project="packages\Grpc.Tools.2.27.0\build\Grpc.Tools.targets" Condition="Exists('packages\Grpc.Tools.2.27.0\build\Grpc.Tools.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>copy /b/v/y $(TargetPath) %25appdata%25\Elgato\StreamDeck\Plugins\com.clemensgerstung.soundboard.sdPlugin
-copy /b/v/y $(ProjectDir)\log4net.config %25appdata%25\Elgato\StreamDeck\Plugins\com.clemensgerstung.soundboard.sdPlugin</PostBuildEvent>
+    <PostBuildEvent>set dst=%25appdata%25\Elgato\StreamDeck\Plugins\com.clemensgerstung.soundboard.sdPlugin
+
+if not exist "%25dst%25" mkdir %25dst%25
+if not exist "%25dst%25\PropertyInspector" mkdir %25dst%25\PropertyInspector
+
+xcopy $(TargetPath) %25dst%25 /v /y
+xcopy $(TargetDir)*.dll %25dst%25 /v /y /s
+xcopy $(ProjectDir)log4net.config %25dst%25 /v /y
+xcopy $(ProjectDir)manifest.json %25dst%25 /v /y
+xcopy $(ProjectDir)PropertyInspector %25dst%25\PropertyInspector /v /y /s
+</PostBuildEvent>
   </PropertyGroup>
 </Project>
