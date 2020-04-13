@@ -118,7 +118,7 @@ xcopy $(TargetPath) %25dst%25 /v /y
 xcopy $(TargetDir)*.dll %25dst%25 /v /y /s
 xcopy $(ProjectDir)log4net.config %25dst%25 /v /y
 xcopy $(ProjectDir)manifest.json %25dst%25 /v /y
-xcopy $(ProjectDir)PropertyInspector %25dst%25\PropertyInspector /v /y /s
+robocopy $(ProjectDir)PropertyInspector %25dst%25\PropertyInspector /mir
 </PostBuildEvent>
   </PropertyGroup>
 </Project>

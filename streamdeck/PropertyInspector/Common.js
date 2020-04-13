@@ -13,6 +13,13 @@ function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, 
             uuid: inUUID
         };
         websocket.send(JSON.stringify(json));
+
+        json = {
+            "event": "getGlobalSettings",
+            "context": inUUID
+        };
+
+        websocket.send(JSON.stringify(json));
     }
 
     websocket.onmessage = onReceiveWebSocketMessage;
@@ -20,9 +27,16 @@ function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, 
 
 function onReceiveWebSocketMessage(msgStr) {
     let message = JSON.parse(msgStr.data);
+
     switch (message.event) {
         case 'didReceiveSettings':
             receivedSettings(message.payload);
+            break;
+        case 'didReceiveGlobalSettings':
+            receivedGlobalSettings(message.payload);
+            break;
+        case 'sendToPropertyInspector':
+            receivedPropertyInspectorValue(message.payload);
             break;
         default:
             break;

@@ -44,12 +44,12 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
   console.log(user.id)
   console.log(oldState.member);
 
-  const newUserChannel = newState.channel;
-  if (newUserChannel !== null) {
-    await newUserChannel.join();
-  } else {
-    await oldState.channel.leave();
-  }
+  // const newUserChannel = newState.channel;
+  // if (newUserChannel !== null) {
+  //   await newUserChannel.join();
+  // } else {
+  //   await oldState.channel.leave();
+  // }
 })
 
 // async function execute(message, serverQueue) {
@@ -73,7 +73,6 @@ async function PlaySong(call, callback) {
 
   if (user != null) {
     var channel = user.voice.channel;
-
     var connection = await channel.join();
     await connection.play(fileName);
   }
@@ -83,7 +82,6 @@ async function PlaySong(call, callback) {
 
 function ListSongs(call, callback) {
   let res = fs.readdirSync(folder);
-
   callback(null, { files: res });
 }
 
@@ -109,13 +107,11 @@ async function ListUsers(call, callback)
   let members = await guild.members.fetch();
   let result = [];
   
-  if(online)
-  {
+  if(online) {
     members = members.filter(user => user.presence.status == "online");
   }
 
-  if(nameFilter)
-  {
+  if(nameFilter) {
     let regex = new RegExp(nameFilter, 'gi');
     members = members.filter(user => user.user.username.match(regex));
   }

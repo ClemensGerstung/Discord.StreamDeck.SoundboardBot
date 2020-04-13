@@ -2,10 +2,11 @@
 <html>
 
 <head>
-    <meta charset="utf-8" /> 
-    <meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover"> 
-    <meta name=apple-mobile-web-app-capable content=yes> 
-    <meta name=apple-mobile-web-app-status-bar-style content=black> 
+    <meta charset="utf-8" />
+    <meta name=viewport
+        content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover">
+    <meta name=apple-mobile-web-app-capable content=yes>
+    <meta name=apple-mobile-web-app-status-bar-style content=black>
     <title>streamdeck discord soundboard</title>
     <link rel="stylesheet" href="sdpi.css">
 </head>
@@ -14,10 +15,37 @@
     <div class="sdpi-wrapper">
         <div type="select" class="sdpi-item">
             <div class="sdpi-item-label">Sound-Datei</div>
-            <select id="soundfile-input" class="sdpi-item-value" onchange="sendValueToPlugin(event.target.value, 'soundfile')">
+            <select id="soundfile-input" class="sdpi-item-value"
+                onchange="sendValueToPlugin(event.target.value, 'soundfile')">
+            </select>
         </div>
-     </div>
-     <script src="Play.js"></script>
-     <script src="Common.js"></script>
+
+        <div class="sdpi-heading">Settings</div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Server</div>
+            <input class="sdpi-item-value" id="server" value="">
+        </div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Port</div>
+            <input class="sdpi-item-value" id="port" value="">
+        </div>
+
+        <div type="select" class="sdpi-item">
+            <div class="sdpi-item-label">User</div>
+            <select id="user" 
+                    class="sdpi-item-value">
+            </select>
+        </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Connect</div>
+            <button class="sdpi-item-value" id="connect" onclick="onConnectClick()">Connect To Discord Bot</button>
+        </div>
+    </div>
+    
+    <script src="Play.js"></script>
+    <script src="Common.js"></script>
 </body>
+
 </html>
