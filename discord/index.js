@@ -40,16 +40,19 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     return;
   }
 
-  console.log(newState.member);
-  console.log(user.id)
-  console.log(oldState.member);
+  if(oldState.channel != null &&
+    oldState.member.user.id == user.id)
+  {
+    console.log("leave old channel " + oldState.channel.name);
+    await oldState.channel.leave();
+  }
 
-  // const newUserChannel = newState.channel;
-  // if (newUserChannel !== null) {
-  //   await newUserChannel.join();
-  // } else {
-  //   await oldState.channel.leave();
-  // }
+  if(newState.channel != null &&
+     newState.member.user.id == user.id)
+  {
+    console.log("join new channel " + newState.channel.name);
+    await newState.channel.join();
+  }
 })
 
 // async function execute(message, serverQueue) {
@@ -90,6 +93,7 @@ async function JoinMe(call, callback) {
 
   if (user == null) {
     user = await guild.members.fetch(request.userId);
+    console.log("Joined user " + user.displayName);
 
     if (user.voice != null && 
         user.voice.channel != null) {

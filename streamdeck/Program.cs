@@ -21,7 +21,11 @@ namespace Streamdeck
 
     private static readonly ILog __log = LogManager.GetLogger(typeof(Soundboard));
 
+    private string _server;
+    private int _port;
+    private string _userId;
     private StreamDeckConnection _connection;
+    private Channel _channel;
     private SoundBoard.SoundBoardClient _client;
     private ConcurrentDictionary<string, string> _songs;
 
@@ -31,11 +35,35 @@ namespace Streamdeck
     {
       get
       {
-        var reply = _client.ListSongs(new ListSongsRequest());
+        var reply = Client.ListSongs(new ListSongsRequest());
         var songs = reply.Files
                       .ToArray();
 
         return songs;
+      }
+    }
+
+    public SoundBoard.SoundBoardClient Client
+    {
+      get
+      {
+        if(_channel == null)
+        {
+          _channel = new Channel(_server, _port, ChannelCredentials.Insecure); 
+        }
+
+        if(_channel.State != ChannelState.Ready)
+        {
+          _channel.ConnectAsync().Wait();
+        }
+
+        if(_client == null)
+        {
+          _client = new SoundBoard.SoundBoardClient(_channel);
+          _client.JoinMe(new JoinMeRequest { UserId = _userId });
+        }
+
+        return _client;
       }
     }
 
@@ -68,26 +96,28 @@ namespace Streamdeck
       var settings = e.Event.Payload.Settings;
       __log.Debug(settings.ToString());
 
-      string server = settings["server"].Value<string>();
-      string port = settings["port"].Value<string>();
-      string user = settings["user"].Value<string>();
-
-      Channel channel = new Channel(server, int.Parse(port), ChannelCredentials.Insecure);
-
-      _client = new SoundBoard.SoundBoardClient(channel);
-      _client.JoinMe(new JoinMeRequest { UserId = user });
+      _server = settings["server"].Value<string>();
+      _port = int.Parse(settings["port"].Value<string>());
+      _userId = settings["user"].Value<string>();
     }
 
     private void OnKeyDown(object sender, StreamDeckEventReceivedEventArgs<streamdeck_client_csharp.Events.KeyDownEvent> e)
     {
-      string context = e.Event.Context;
-
-      if (e.Event.Action == PLAY_BUTTON_ID)
+      try
       {
-        if (_songs.TryGetValue(context, out string value))
+        string context = e.Event.Context;
+
+        if (e.Event.Action == PLAY_BUTTON_ID)
         {
-          _client.PlaySong(new PlaySongRequest { FileName = value });
+          if (_songs.TryGetValue(context, out string value))
+          {
+            Client.PlaySong(new PlaySongRequest { FileName = value });
+          }
         }
+      }
+      catch (Exception ex)
+      {
+        __log.Fatal(ex);
       }
     }
 
@@ -95,6 +125,7 @@ namespace Streamdeck
     {
       try
       {
+        // TODO: use SendToPropertyInspector instead of SetSettings
         __log.DebugFormat("{0} {1} {2} {3}", e.Event.Device, e.Event.Context, e.Event.Action, e.Event.Event);
         string context = e.Event.Context;
         JObject payload = new JObject();
@@ -109,7 +140,7 @@ namespace Streamdeck
         __log.DebugFormat("Sending Songs {0}", payload);
         Task task = _connection.SetSettingsAsync(payload, context);
 
-        var listUsersResponse = _client.ListUsers(new ListUsersRequest { OnlyOnline = true });
+        var listUsersResponse = Client.ListUsers(new ListUsersRequest { OnlyOnline = true });
         var usersPayload = new JObject();
         var users = new JArray();
 
@@ -193,11 +224,6 @@ namespace Streamdeck
         _songs = new ConcurrentDictionary<string, string>(ReadJsonSettingsFromFile<Dictionary<string, string>>("songs.json"));
         var task = _connection.GetGlobalSettingsAsync();
         Task.WaitAll(task);
-
-        //Channel channel = new Channel("127.0.0.1:50051", ChannelCredentials.Insecure);
-
-        //_client = new SoundBoard.SoundBoardClient(channel);
-        //_client.JoinMe(new JoinMeRequest { UserId = "216314417913135105" });
       }
       catch (Exception exception)
       {
