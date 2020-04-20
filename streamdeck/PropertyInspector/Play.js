@@ -1,19 +1,5 @@
 ﻿function receivedSettings(payload) {
-    let domItem = document.getElementById("soundfile-input");
-
-    console.log(payload);
-
-    if (payload.settings.songs) {
-        payload.settings.songs.forEach(function (item) {
-            let option = document.createElement("option");
-            option.text = item;
-            domItem.add(option);
-        });
-    }
-
-    if (payload.settings.soundfile) {
-        domItem.value = payload.settings.soundfile;
-    }
+    
 }
 
 function receivedGlobalSettings(payload) {
@@ -52,6 +38,19 @@ function onConnectClick() {
 
 function receivedPropertyInspectorValue(payload){
     let user = document.getElementById("user");
+    let domItem = document.getElementById("soundfile-input");
+
+    if (payload.songs) {
+        payload.songs.forEach(function (item) {
+            let option = document.createElement("option");
+            option.text = item;
+            domItem.add(option);
+        });
+    }
+
+    if (payload.soundfile) {
+        domItem.value = payload.soundfile;
+    }
 
     if (payload.users) {
         payload.users.forEach(function (item) {

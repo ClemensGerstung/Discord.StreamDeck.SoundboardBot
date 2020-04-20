@@ -50,15 +50,19 @@ namespace Streamdeck
           _channel = new Channel(_server, _port, ChannelCredentials.Insecure); 
         }
 
+        if(_client == null)
+        {
+          _client = new SoundBoard.SoundBoardClient(_channel);
+        }
+        
         if(_channel.State != ChannelState.Ready)
         {
           Task task = _channel.ConnectAsync();
           Task.WaitAll(task);
         }
 
-        if(_client == null)
+        if(!string.IsNullOrWhiteSpace(_userId))
         {
-          _client = new SoundBoard.SoundBoardClient(_channel);
           _client.JoinMe(new JoinMeRequest { UserId = _userId });
         }
 
@@ -124,24 +128,21 @@ namespace Streamdeck
     {
       try
       {
-        // TODO: use SendToPropertyInspector instead of SetSettings
         __log.DebugFormat("{0} {1} {2} {3}", e.Event.Device, e.Event.Context, e.Event.Action, e.Event.Event);
+        var listUsersResponse = Client.ListUsers(new ListUsersRequest { OnlyOnline = true });
         string context = e.Event.Context;
+        
         JObject payload = new JObject();
         JArray array = new JArray(Songs);
+        JArray users = new JArray();
+        
         payload.Add("songs", array);
+        payload.Add("users", users);
 
         if (_songs.TryGetValue(context, out string value))
         {
           payload.Add("soundfile", value);
         }
-
-        __log.DebugFormat("Sending Songs {0}", payload);
-        Task task = _connection.SetSettingsAsync(payload, context);
-
-        var listUsersResponse = Client.ListUsers(new ListUsersRequest { OnlyOnline = true });
-        var usersPayload = new JObject();
-        var users = new JArray();
 
         foreach (var user in listUsersResponse.Users)
         {
@@ -152,12 +153,10 @@ namespace Streamdeck
           users.Add(u);
         }
 
-        usersPayload.Add("users", users);
+        __log.DebugFormat("Sending payload {0}", payload);
 
-        __log.DebugFormat("Sending Users {0}", usersPayload);
-
-        var t1 = _connection.SendToPropertyInspectorAsync(PLAY_BUTTON_ID, usersPayload, context);
-        Task.WaitAll(task, t1);
+        Task task = _connection.SendToPropertyInspectorAsync(PLAY_BUTTON_ID, payload, context);
+        Task.WaitAll(task);
       }
       catch (Exception ex)
       {

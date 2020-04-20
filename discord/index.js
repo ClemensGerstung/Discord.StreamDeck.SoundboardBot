@@ -1,13 +1,11 @@
-const PROTO_PATH = __dirname + '/../soundboard.proto';
-
 const Discord = require("discord.js");
-const { token, guildId, folder } = require("./config.json");
+const { token, guildId, folder, proto } = require("./config.json");
 const path = require('path');
 const fs = require('fs');
 const grpc = require('grpc');
 const protoLoader = require('@grpc/proto-loader');
 const packageDefinition = protoLoader.loadSync(
-  PROTO_PATH,
+  path.join(__dirname, proto),
   {
     keepCase: true,
     longs: String,
@@ -54,21 +52,6 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     await newState.channel.join();
   }
 })
-
-// async function execute(message, serverQueue) {
-//   const voiceChannel = message.member.voice.channel;
-//   if (!voiceChannel)
-//     return message.channel.send(
-//       "You need to be in a voice channel to play music!"
-//     );
-//   const permissions = voiceChannel.permissionsFor(message.client.user);
-//   if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
-//     return message.channel.send(
-//       "I need the permissions to join and speak in your voice channel!"
-//     );
-//   }
-// }
-
 
 async function PlaySong(call, callback) {
   var request = call.request;
