@@ -114,12 +114,14 @@
 
 if not exist "%25dst%25" mkdir %25dst%25
 if not exist "%25dst%25\PropertyInspector" mkdir %25dst%25\PropertyInspector
+if not exist "%25dst%25\Images" mkdir %25dst%25\Images
 
-xcopy $(TargetPath) %25dst%25 /v /y
-xcopy $(TargetDir)*.dll %25dst%25 /v /y /s
-xcopy $(ProjectDir)log4net.config %25dst%25 /v /y
-xcopy $(ProjectDir)manifest.json %25dst%25 /v /y
-robocopy $(ProjectDir)PropertyInspector %25dst%25\PropertyInspector /mir
+xcopy $(TargetPath) %25dst%25 /v /y &gt; NUL
+xcopy $(TargetDir)*.dll %25dst%25 /v /y /s &gt; NUL
+xcopy $(ProjectDir)log4net.config %25dst%25 /v /y &gt; NUL
+xcopy $(ProjectDir)manifest.json %25dst%25 /v /y &gt; NUL
+robocopy $(ProjectDir)PropertyInspector %25dst%25\PropertyInspector /mir &gt; NUL
+robocopy $(ProjectDir)Images %25dst%25\Images /mir &gt; NUL
 </PostBuildEvent>
   </PropertyGroup>
 </Project>

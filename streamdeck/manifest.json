@@ -1,11 +1,11 @@
 {
     "Actions": [
       {
-        "Icon": "Images/icon",
+        "Icon": "Images/play",
         "Name": "Play Sound",
         "States": [
           {
-            "Image": "Images/action1"
+            "Image": "Images/playsound"
           }
         ],
         "Tooltip": "Let's your discord bot play a sound",
@@ -21,7 +21,7 @@
     "Version": "0.1",
     "CodePathWin": "Soundboard.exe",
     "Category": "Streamdeck Discord Soundboard",
-    "CategoryIcon": "Images/categoryIcon",
+    "CategoryIcon": "Images/discord",
     "SDKVersion":  2,
     "Software": {
       "MinimumVersion": "4.1"
