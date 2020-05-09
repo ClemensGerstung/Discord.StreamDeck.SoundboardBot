@@ -114,7 +114,9 @@ namespace Streamdeck
         {
           if (_songs.TryGetValue(context, out string value))
           {
+            __log.DebugFormat("Play sound: \"{0}\"", value);
             Client.PlaySong(new PlaySongRequest { FileName = value });
+            __log.DebugFormat("Played sound: \"{0}\"", value);
           }
         }
       }
