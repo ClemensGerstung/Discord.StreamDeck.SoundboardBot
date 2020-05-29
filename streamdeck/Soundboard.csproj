@@ -90,6 +90,9 @@
     <Compile Include="Soundboard.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Protobuf Include="..\soundboard.proto">
+      <Link>soundboard.proto</Link>
+    </Protobuf>
     <None Include="App.config" />
     <None Include="log4net.config" />
     <None Include="manifest.json" />

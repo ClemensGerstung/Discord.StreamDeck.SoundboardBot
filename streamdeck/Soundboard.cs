@@ -99,9 +99,23 @@ namespace Streamdeck
       var settings = e.Event.Payload.Settings;
       __log.Debug(settings.ToString());
 
-      _server = settings["server"].Value<string>();
-      _port = int.Parse(settings["port"].Value<string>());
+      var server = settings["server"].Value<string>();
+      var port = int.Parse(settings["port"].Value<string>());
       _userId = settings["user"].Value<string>();
+
+      if(server != _server || port != _port)
+      {
+        _channel.ShutdownAsync()
+                .ContinueWith(Done);
+      }
+
+      void Done(Task task)
+      {
+        _channel = null;
+        _client = null;
+        _server = server;
+        _port = port;
+      }
     }
 
     private void OnKeyDown(object sender, StreamDeckEventReceivedEventArgs<streamdeck_client_csharp.Events.KeyDownEvent> e)
