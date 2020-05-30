@@ -11,6 +11,7 @@ namespace Discord
   {
     static async Task Main(string[] args)
     {
+      Server server = null;
       ParserResult<Options> result = Parser.Default.ParseArguments<Options>(args);
       if (result.Tag == ParserResultType.Parsed)
       {
@@ -18,7 +19,6 @@ namespace Discord
 
         try
         {
-          Server server = null;
           DiscordSocketClient client = new DiscordSocketClient();
           client.Ready += DiscordReady;
 
@@ -29,25 +29,27 @@ namespace Discord
           server = new Server
           {
             Services = { SoundBoard.BindService(serviceImpl) },
-            Ports = { new ServerPort("localhost", 50051, ServerCredentials.Insecure) }
+            Ports = { new ServerPort("localhost", options.Port, ServerCredentials.Insecure) }
           };
 
-          Console.ReadLine();
+          await serviceImpl.Wait();
 
           await server.ShutdownAsync();
-
-          Task DiscordReady()
-          {
-            server.Start();
-
-            return Task.CompletedTask;
-          }
+          await client.StopAsync();
+          await client.LogoutAsync();
         }
         catch (Exception e)
         {
           //__log.Fatal(e.Message);
           //__log.Fatal(e.StackTrace);
         }
+      }
+
+      Task DiscordReady()
+      {
+        server.Start();
+
+        return Task.CompletedTask;
       }
     }
   }

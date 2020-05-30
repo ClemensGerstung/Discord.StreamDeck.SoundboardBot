@@ -16,5 +16,7 @@ namespace Discord
     [Option('b', "buffer", Required = false, Default = false, HelpText = "Flag if sound files should be loaded into memory before sending to discord")]
     public bool PreBuffer { get; set; }
 
+    [Option('P', "port", Required = true, Default = 50051, HelpText = "Port to use to start the server")]
+    public int Port { get; set; }
   }
 }

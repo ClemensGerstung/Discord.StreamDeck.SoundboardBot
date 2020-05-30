@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +22,7 @@ namespace Discord
     private SocketUser _currentUser;
     private ConcurrentQueue<string> _queue;
     private ManualResetEventSlim _playSoundSignal;
+    private ManualResetEventSlim _runningSignal;
 
     public SoundboardServerImpl(DiscordSocketClient client,
                                 string soundPath,
@@ -33,6 +35,9 @@ namespace Discord
       _prebuf = prebuf;
       _queue = new ConcurrentQueue<string>();
       _playSoundSignal = new ManualResetEventSlim(false);
+      _runningSignal = new ManualResetEventSlim(false);
+
+      
 
       //_client.VoiceServerUpdated
 
@@ -63,12 +68,32 @@ namespace Discord
 
     public override async Task<ListUsersReply> ListUsers(ListUsersRequest request, ServerCallContext context)
     {
+      string filter = request.Filter;
       ListUsersReply reply = new ListUsersReply();
       IGuild guild = _client.GetGuild(_guildId);
       var users = await guild.GetUsersAsync();
 
+      if (!string.IsNullOrEmpty(filter))
+      {
+        filter = ".*";
+      }
+
+      Regex regex = new Regex(filter,
+                                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
       foreach (IGuildUser user in users)
       {
+        if(request.OnlyOnline &&
+          user.Status != UserStatus.Online)
+        {
+          continue;
+        }
+
+        if(!regex.IsMatch(user.Username))
+        {
+          continue;
+        }
+
         User replyUser = new User();
         replyUser.Id = user.Id.ToString();
         replyUser.Name = user.Username;
@@ -85,6 +110,12 @@ namespace Discord
       _playSoundSignal.Set();
 
       return Task.FromResult(new PlaySongReply());
+    }
+
+    public Task Wait()
+    {
+      _runningSignal.Wait();
+      return Task.CompletedTask;
     }
 
     private void PlayThreadHandler(object unused)
