@@ -21,6 +21,7 @@ namespace Discord
         {
           DiscordSocketClient client = new DiscordSocketClient();
           client.Ready += DiscordReady;
+          client.Log += Log;
 
           await client.LoginAsync(TokenType.Bot, options.DiscordToken);
           await client.StartAsync();
@@ -49,6 +50,12 @@ namespace Discord
       {
         server.Start();
 
+        return Task.CompletedTask;
+      }
+
+      Task Log(LogMessage message)
+      {
+        Console.WriteLine(message);
         return Task.CompletedTask;
       }
     }

@@ -14,15 +14,19 @@ namespace Discord
 {
   public class SoundboardServerImpl : SoundBoard.SoundBoardBase
   {
-    private DiscordSocketClient _client;
-    private string _soundPath;
-    private ulong _guildId;
-    private bool _prebuf;
+    private readonly DiscordSocketClient _client;
+    private readonly string _soundPath;
+    private readonly ulong _guildId;
+    private readonly bool _prebuf;
     private IAudioClient _audioClient;
-    private SocketUser _currentUser;
-    private ConcurrentQueue<string> _queue;
-    private ManualResetEventSlim _playSoundSignal;
-    private ManualResetEventSlim _runningSignal;
+    private IGuildUser _currentUser;
+    private IVoiceChannel _currentChannel;
+    private readonly ConcurrentQueue<string> _queue;
+    private readonly ManualResetEventSlim _playSoundSignal;
+    private readonly ManualResetEventSlim _playingSoundSignal;
+    private readonly ManualResetEventSlim _runningSignal;
+    private readonly ManualResetEventSlim _rejoinSignal;
+    private readonly ManualResetEventSlim _rejoiningSignal;
 
     public SoundboardServerImpl(DiscordSocketClient client,
                                 string soundPath,
@@ -35,21 +39,45 @@ namespace Discord
       _prebuf = prebuf;
       _queue = new ConcurrentQueue<string>();
       _playSoundSignal = new ManualResetEventSlim(false);
+      _playingSoundSignal = new ManualResetEventSlim(true);
       _runningSignal = new ManualResetEventSlim(false);
+      _rejoinSignal = new ManualResetEventSlim(false);
+      _rejoiningSignal = new ManualResetEventSlim(true);
 
-      
-
-      //_client.VoiceServerUpdated
+      _client.UserVoiceStateUpdated += OnUserVoiceStateUpdated;
 
       ThreadPool.QueueUserWorkItem(PlayThreadHandler);
+      ThreadPool.QueueUserWorkItem(RejoinVoiceChannel);
+    }
+
+    private Task OnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
+    {
+      if (_currentUser?.Id == user.Id &&
+        !Equals(oldState.VoiceChannel, 
+                newState.VoiceChannel))
+      {
+        if (_rejoiningSignal.Wait(100))
+        {
+          Console.WriteLine("Rejoin");
+          _rejoinSignal.Set();
+        }
+      }
+
+      return Task.CompletedTask;
     }
 
     public override Task<JoinMeReply> JoinMe(JoinMeRequest request, ServerCallContext context)
     {
-      if (ulong.TryParse(request.UserId, out ulong userId))
+      if (ulong.TryParse(request.UserId, out ulong userId) &&
+          _currentUser == null)
       {
-        _currentUser = _client.GetUser(userId);
+        var guild = _client.GetGuild(_guildId);
+        _currentUser = guild.GetUser(userId);
+
+        Console.WriteLine("Join user with ID {0}", userId);
+        _rejoinSignal.Set();
       }
+
       return Task.FromResult(new JoinMeReply());
     }
 
@@ -83,13 +111,13 @@ namespace Discord
 
       foreach (IGuildUser user in users)
       {
-        if(request.OnlyOnline &&
+        if (request.OnlyOnline &&
           user.Status != UserStatus.Online)
         {
           continue;
         }
 
-        if(!regex.IsMatch(user.Username))
+        if (!regex.IsMatch(user.Username))
         {
           continue;
         }
@@ -109,45 +137,87 @@ namespace Discord
       _queue.Enqueue(request.FileName);
       _playSoundSignal.Set();
 
+      Console.WriteLine("Added file {0} (Total: {1})", request.FileName, _queue.Count);
+
       return Task.FromResult(new PlaySongReply());
     }
 
-    public Task Wait()
+    public async Task Wait()
     {
       _runningSignal.Wait();
-      return Task.CompletedTask;
+      _playingSoundSignal.Wait();
+
+      if (_currentChannel != null)
+      {
+        await _currentChannel.DisconnectAsync();
+      }
     }
 
     private void PlayThreadHandler(object unused)
     {
-      while (true)
+      do
       {
         _playSoundSignal.Wait();
 
         if (_audioClient == null)
         {
-          var guild = _client.GetGuild(_guildId);
-          var user = guild.GetUser(_currentUser.Id);
-          _audioClient = user.VoiceChannel
-                                     .ConnectAsync()
-                                     .GetAwaiter()
-                                     .GetResult();
+          _playSoundSignal.Reset();
+          continue;
         }
 
-        do
+        using (var discord = _audioClient.CreatePCMStream(AudioApplication.Mixed))
         {
-          if (_queue.TryDequeue(out string fileName))
+          do
           {
-            PlaySound(fileName);
+            if (_queue.TryDequeue(out string fileName))
+            {
+              Console.WriteLine("Play file {0} (Total: {1})", fileName, _queue.Count);
+              _playingSoundSignal.Reset();
+              PlaySound(fileName, discord);
+              _playingSoundSignal.Set();
+              Console.WriteLine("Played file {0} (Remaining: {1})", fileName, _queue.Count);
+            }
           }
+          while (!_queue.IsEmpty);
         }
-        while (!_queue.IsEmpty);
 
         _playSoundSignal.Reset();
       }
+      while (!_runningSignal.IsSet);
     }
 
-    private void PlaySound(string fileName)
+    private void RejoinVoiceChannel(object unused)
+    {
+      do
+      {
+        _rejoinSignal.Wait();
+        _playingSoundSignal.Wait();
+        _rejoiningSignal.Reset();
+
+        Task diconnectingTask = Task.Delay(0);
+        if (_currentChannel != null)
+        {
+          diconnectingTask = _currentChannel.DisconnectAsync();
+        }
+        diconnectingTask.Wait();
+
+        _currentChannel = _currentUser.VoiceChannel;
+        var audioClientTask = _currentChannel.ConnectAsync();
+        audioClientTask.Wait();
+        _audioClient = audioClientTask.Result;
+
+        _rejoiningSignal.Set();
+        _rejoinSignal.Reset();
+
+        if (!_queue.IsEmpty)
+        {
+          _playSoundSignal.Set();
+        }
+      }
+      while (!_runningSignal.IsSet);
+    }
+
+    private void PlaySound(string fileName, Stream destination)
     {
       string path = Path.Combine(_soundPath, fileName);
       var psi = new ProcessStartInfo
@@ -158,20 +228,20 @@ namespace Discord
         RedirectStandardOutput = true,
       };
 
-      using(var ffmpeg = Process.Start(psi))
-      using(var output = ffmpeg.StandardOutput.BaseStream)
-      using(MemoryStream buffer = new MemoryStream())
-      using(var discord = _audioClient.CreatePCMStream(AudioApplication.Mixed))
+      using (var ffmpeg = Process.Start(psi))
+      using (var output = ffmpeg.StandardOutput.BaseStream)
+      using (MemoryStream buffer = new MemoryStream())
       {
         Stream stream = output;
-        if(_prebuf)
+        if (_prebuf)
         {
           output.CopyTo(buffer);
+          buffer.Seek(0, SeekOrigin.Begin);
           stream = buffer;
         }
 
-        try { stream.CopyTo(discord); }
-        finally { discord.Flush(); }
+        try { stream.CopyTo(destination); }
+        finally { destination.Flush(); }
       }
     }
   }
