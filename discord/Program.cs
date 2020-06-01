@@ -1,16 +1,25 @@
 ﻿using CommandLine;
 using Discord.WebSocket;
 using Grpc.Core;
+using log4net;
+using log4net.Config;
 using Soundboard;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Discord
 {
   class Program
   {
+    private readonly static ILog __log = LogManager.GetLogger(typeof(Program));
+
     static async Task Main(string[] args)
     {
+      var logRepository = LogManager.GetRepository(typeof(Program).Assembly);
+      XmlConfigurator.Configure(logRepository,
+                                new FileInfo("log4net.config"));
+
       Server server = null;
       ParserResult<Options> result = Parser.Default.ParseArguments<Options>(args);
       if (result.Tag == ParserResultType.Parsed)
@@ -23,6 +32,7 @@ namespace Discord
           client.Ready += DiscordReady;
           client.Log += Log;
 
+          __log.Debug("Login and Start Discord Bot");
           await client.LoginAsync(TokenType.Bot, options.DiscordToken);
           await client.StartAsync();
 
@@ -33,21 +43,28 @@ namespace Discord
             Ports = { new ServerPort("localhost", options.Port, ServerCredentials.Insecure) }
           };
 
+          __log.Debug("Server running, Waiting...");
           await serviceImpl.Wait();
+          __log.Debug("Server ended");
 
+          __log.Debug("Shutdown server");
           await server.ShutdownAsync();
+
+          __log.Debug("Stop and Logoff from Discord");
           await client.StopAsync();
           await client.LogoutAsync();
         }
         catch (Exception e)
         {
-          //__log.Fatal(e.Message);
-          //__log.Fatal(e.StackTrace);
+          __log.Fatal("Got Exception in Main");
+          __log.Fatal(e);
+          throw e;
         }
       }
 
       Task DiscordReady()
       {
+        __log.Info("Start Server");
         server.Start();
 
         return Task.CompletedTask;
@@ -55,7 +72,7 @@ namespace Discord
 
       Task Log(LogMessage message)
       {
-        Console.WriteLine(message);
+        __log.InfoFormat("Discord: {0}", message);
         return Task.CompletedTask;
       }
     }
