@@ -55,11 +55,11 @@ namespace Streamdeck
           _client = new SoundBoard.SoundBoardClient(_channel);
         }
         
-        if(_channel.State != ChannelState.Ready)
-        {
-          Task task = _channel.ConnectAsync();
-          Task.WaitAll(task);
-        }
+        //if(_channel.State != ChannelState.Ready)
+        //{
+        //  Task task = _channel.ConnectAsync();
+        //  task.Wait();
+        //}
 
         if(!string.IsNullOrWhiteSpace(_userId))
         {
@@ -105,12 +105,12 @@ namespace Streamdeck
 
       if(server != _server || port != _port)
       {
-        _channel.ShutdownAsync()
-                .ContinueWith(Done);
-      }
+        if (_channel != null)
+        {
+          Task task = _channel.ShutdownAsync();
+          task.Wait();
+        }
 
-      void Done(Task task)
-      {
         _channel = null;
         _client = null;
         _server = server;

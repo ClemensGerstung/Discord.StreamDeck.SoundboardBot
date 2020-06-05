@@ -274,30 +274,37 @@ namespace Discord
         RedirectStandardOutput = true,
       };
 
-      using (var ffmpeg = Process.Start(psi))
-      using (var output = ffmpeg.StandardOutput.BaseStream)
-      using (MemoryStream buffer = new MemoryStream())
+      using (var ffmpeg = new Process())
       {
-        Stream stream = output;
-        if (_prebuf)
-        {
-          __log.Debug("Prebuffer");
-          output.CopyTo(buffer);
-          buffer.Seek(0, SeekOrigin.Begin);
-          stream = buffer;
-        }
+        ffmpeg.StartInfo = psi;
+        ffmpeg.PriorityClass = ProcessPriorityClass.RealTime;
+        ffmpeg.Start();
 
-        try
-        { 
-          stream.CopyTo(destination);
-        }
-        catch (Exception e)
+        using (var output = ffmpeg.StandardOutput.BaseStream)
+        using (MemoryStream buffer = new MemoryStream())
         {
-          __log.ErrorFormat("Exception while playing sound:\n{0}", e);
-        }
-        finally 
-        { 
-          destination.Flush(); 
+          Stream stream = output;
+          if (_prebuf)
+          {
+            __log.Debug("Prebuffer");
+            output.CopyTo(buffer);
+            buffer.Seek(0, SeekOrigin.Begin);
+            stream = buffer;
+          }
+
+          try
+          {
+            stream.CopyTo(destination);
+          }
+          catch (Exception e)
+          {
+            __log.ErrorFormat("Exception while playing sound:\n{0}", e);
+          }
+          finally
+          {
+            destination.Flush();
+            ffmpeg.WaitForExit();
+          }
         }
       }
     }

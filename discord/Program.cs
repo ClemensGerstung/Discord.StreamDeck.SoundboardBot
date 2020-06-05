@@ -6,6 +6,7 @@ using log4net.Config;
 using Soundboard;
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Discord
@@ -16,7 +17,7 @@ namespace Discord
 
     static async Task Main(string[] args)
     {
-      var logRepository = LogManager.GetRepository(typeof(Program).Assembly);
+      var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
       XmlConfigurator.Configure(logRepository,
                                 new FileInfo("log4net.config"));
 
@@ -40,7 +41,7 @@ namespace Discord
           server = new Server
           {
             Services = { SoundBoard.BindService(serviceImpl) },
-            Ports = { new ServerPort("localhost", options.Port, ServerCredentials.Insecure) }
+            Ports = { new ServerPort("0.0.0.0", options.Port, ServerCredentials.Insecure) }
           };
 
           __log.Debug("Server running, Waiting...");
