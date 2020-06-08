@@ -17,15 +17,15 @@ namespace Discord
 
     static async Task Main(string[] args)
     {
-      var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-      XmlConfigurator.Configure(logRepository,
-                                new FileInfo("log4net.config"));
-
       Server server = null;
       ParserResult<Options> result = Parser.Default.ParseArguments<Options>(args);
       if (result.Tag == ParserResultType.Parsed)
       {
         Options options = ((Parsed<Options>)result).Value;
+
+        var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+        XmlConfigurator.Configure(logRepository,
+                                  new FileInfo(options.Log4NetConfig));
 
         try
         {
